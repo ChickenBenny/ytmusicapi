@@ -1,6 +1,7 @@
 from .playlists import parse_playlist_items
 from ._utils import *
 from ytmusicapi.continuations import get_continuations
+from ytmusicapi.mixins.get_library_utils import if_continuation
 
 
 def parse_artists(results, uploaded=False):
@@ -29,12 +30,7 @@ def parse_library_albums(response, request_func, limit):
         return []
     albums = parse_albums(results['items'])
 
-    if 'continuations' in results:
-        parse_func = lambda contents: parse_albums(contents)
-        remaining_limit = None if limit is None else (limit - len(albums))
-        albums.extend(
-            get_continuations(results, 'gridContinuation', remaining_limit, request_func,
-                              parse_func))
+    if_continuation(None, None, limit, albums, results)
 
     return albums
 
@@ -86,13 +82,7 @@ def parse_library_artists(response, request_func, limit):
         return []
     artists = parse_artists(results['contents'])
 
-    if 'continuations' in results:
-        parse_func = lambda contents: parse_artists(contents)
-        remaining_limit = None if limit is None else (limit - len(artists))
-        artists.extend(
-            get_continuations(results, 'musicShelfContinuation', remaining_limit, request_func,
-                              parse_func))
-
+    if_continuation(None, None, limit, artists, results)
     return artists
 
 

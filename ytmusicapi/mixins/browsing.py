@@ -6,6 +6,7 @@ from ytmusicapi.parsers.albums import parse_album_header
 from ytmusicapi.parsers.playlists import parse_playlist_items
 from ytmusicapi.parsers.library import parse_albums
 from raise_utils import raise_get_song, raise_get_lyrics, raise_match, raise_match_signature
+from get_library_utils import if_continuation
 
 
 class BrowsingMixin:
@@ -103,15 +104,7 @@ class BrowsingMixin:
         home.extend(self.parser.parse_mixed_content(results))
 
         section_list = nav(response, SINGLE_COLUMN_TAB + ['sectionListRenderer'])
-        if 'continuations' in section_list:
-            request_func = lambda additionalParams: self._send_request(
-                endpoint, body, additionalParams)
-
-            parse_func = lambda contents: self.parser.parse_mixed_content(contents)
-
-            home.extend(
-                get_continuations(section_list, 'sectionListContinuation', limit - len(home),
-                                  request_func, parse_func))
+        if_continuation(endpoint, body, limit, home, results)
 
         return home
 
