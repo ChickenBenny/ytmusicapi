@@ -15,10 +15,11 @@ from ytmusicapi.mixins.explore import ExploreMixin
 from ytmusicapi.mixins.library import LibraryMixin
 from ytmusicapi.mixins.playlists import PlaylistsMixin
 from ytmusicapi.mixins.uploads import UploadsMixin
+from  ytmusicapi.mixins.get_library_uploads import UploadsMixinGetLibrary
 
 
 class YTMusic(BrowsingMixin, SearchMixin, WatchMixin, ExploreMixin, LibraryMixin, PlaylistsMixin,
-              UploadsMixin):
+              UploadsMixin, UploadsMixinGetLibrary):
     """
     Allows automated interactions with YouTube Music by emulating the YouTube web client's requests.
     Permits both authenticated and non-authenticated requests.

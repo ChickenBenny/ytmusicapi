@@ -6,6 +6,9 @@ from raise_utils import filter_exception, scope_exception, set_exception
 
 
 class SearchMixin:
+    def __init__(self):
+      self.scopes = ['library', 'uploads']
+
     def search(self,
                query: str,
                filter: str = None,
@@ -139,7 +142,7 @@ class SearchMixin:
             return search_results
 
         if 'tabbedSearchResultsRenderer' in response['contents']:
-            tab_index = 0 if not scope or filter else scopes.index(scope) + 1
+            tab_index = 0 if not scope or filter else self.scopes.index(scope) + 1
             results = response['contents']['tabbedSearchResultsRenderer']['tabs'][tab_index][
                 'tabRenderer']['content']
         else:
@@ -154,15 +157,15 @@ class SearchMixin:
         # set filter for parser
         if filter and 'playlists' in filter:
             filter = 'playlists'
-        elif scope == scopes[1]:
-            filter = scopes[1]
+        elif scope == self.scopes[1]:
+            filter = self.scopes[1]
 
         for res in results:
             if 'musicShelfRenderer' in res:
                 results = res['musicShelfRenderer']['contents']
                 original_filter = filter
                 category = nav(res, MUSIC_SHELF + TITLE_TEXT, True)
-                if not filter and scope == scopes[0]:
+                if not filter and scope == self.scopes[0]:
                     filter = category
 
                 type = filter[:-1].lower() if filter else None
