@@ -1,5 +1,5 @@
 from typing import List, Dict, Union
-
+from get_library_utils import if_continuation
 from ytmusicapi.continuations import get_continuations
 from ytmusicapi.parsers.playlists import validate_playlist_id
 from ytmusicapi.parsers.watch import *
@@ -145,13 +145,7 @@ class WatchMixin:
                                   ), results['contents'])), None)
         tracks = parse_watch_playlist(results['contents'])
 
-        if 'continuations' in results:
-            request_func = lambda additionalParams: self._send_request(
-                endpoint, body, additionalParams)
-            parse_func = lambda contents: parse_watch_playlist(contents)
-            tracks.extend(
-                get_continuations(results, 'playlistPanelContinuation', limit - len(tracks),
-                                  request_func, parse_func, '' if is_playlist else 'Radio'))
+        if_continuation(endpoint, body, limit, tracks, results)
 
         return dict(tracks=tracks,
                     playlistId=playlist,

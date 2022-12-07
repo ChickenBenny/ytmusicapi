@@ -2,7 +2,7 @@ from ytmusicapi.continuations import *
 from ._utils import *
 from ytmusicapi.parsers.browsing import *
 from ytmusicapi.parsers.library import *
-
+from get_library_utils import if_continuation
 
 class LibraryMixin:
     def get_library_playlists(self, limit: int = 25) -> List[Dict]:
@@ -29,14 +29,7 @@ class LibraryMixin:
         results = get_library_contents(response, GRID)
         playlists = parse_content_list(results['items'][1:], parse_playlist)
 
-        if 'continuations' in results:
-            request_func = lambda additionalParams: self._send_request(
-                endpoint, body, additionalParams)
-            parse_func = lambda contents: parse_content_list(contents, parse_playlist)
-            remaining_limit = None if limit is None else (limit - len(playlists))
-            playlists.extend(
-                get_continuations(results, 'gridContinuation', remaining_limit, request_func,
-                                  parse_func))
+        if_continuation(endpoint, body, limit, playlists, results)
 
         return playlists
 
@@ -78,22 +71,7 @@ class LibraryMixin:
         results = response['results']
         songs = response['parsed']
 
-        if 'continuations' in results:
-            request_continuations_func = lambda additionalParams: self._send_request(
-                endpoint, body, additionalParams)
-            parse_continuations_func = lambda contents: parse_playlist_items(contents)
-
-            if validate_responses:
-                songs.extend(
-                    get_validated_continuations(results, 'musicShelfContinuation',
-                                                limit - len(songs), per_page,
-                                                request_continuations_func,
-                                                parse_continuations_func))
-            else:
-                remaining_limit = None if limit is None else (limit - len(songs))
-                songs.extend(
-                    get_continuations(results, 'musicShelfContinuation', remaining_limit,
-                                      request_continuations_func, parse_continuations_func))
+        if_continuation(endpoint, body, limit, songs, results)
 
         return songs
 

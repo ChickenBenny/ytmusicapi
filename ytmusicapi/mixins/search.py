@@ -3,7 +3,7 @@ from ytmusicapi.navigation import *
 from ytmusicapi.continuations import get_continuations
 from ytmusicapi.parsers.search_params import *
 from raise_utils import filter_exception, scope_exception, set_exception
-
+from get_library_utils import if_continuation
 
 class SearchMixin:
     def __init__(self):
@@ -172,15 +172,6 @@ class SearchMixin:
                 search_results.extend(self.parser.parse_search_results(results, type, category))
                 filter = original_filter
 
-                if 'continuations' in res['musicShelfRenderer']:
-                    request_func = lambda additionalParams: self._send_request(
-                        endpoint, body, additionalParams)
-
-                    parse_func = lambda contents: self.parser.parse_search_results(
-                        contents, type, category)
-
-                    search_results.extend(
-                        get_continuations(res['musicShelfRenderer'], 'musicShelfContinuation',
-                                          limit - len(search_results), request_func, parse_func))
+                if_continuation(endpoint, body, limit, search_results, results)
 
         return search_results
