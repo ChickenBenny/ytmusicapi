@@ -7,7 +7,7 @@ from ytmusicapi.parsers.playlists import parse_playlist_items
 from ytmusicapi.parsers.library import parse_albums
 from raise_utils import raise_get_song, raise_get_lyrics, raise_match, raise_match_signature
 from get_library_utils import if_continuation
-
+from browsing_utils import _browsing_results
 
 class BrowsingMixin:
     def get_home(self, limit=3) -> List[Dict]:
@@ -96,16 +96,10 @@ class BrowsingMixin:
             ]
 
         """
-        endpoint = 'browse'
-        body = {"browseId": "FEmusic_home"}
-        response = self._send_request(endpoint, body)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
+        response, results = _browsing_results(self, 'browse', {"browseId": "FEmusic_home"}, SINGLE_COLUMN_TAB + SECTION_LIST, limit)
         home = []
         home.extend(self.parser.parse_mixed_content(results))
-
-        section_list = nav(response, SINGLE_COLUMN_TAB + ['sectionListRenderer'])
-        if_continuation(endpoint, body, limit, home, results)
-
+        if_continuation('browse', {"browseId": "FEmusic_home"}, limit, home, results)
         return home
 
     def get_artist(self, channelId: str) -> Dict:
@@ -195,13 +189,7 @@ class BrowsingMixin:
                 }
             }
         """
-        if channelId.startswith("MPLA"):
-            channelId = channelId[4:]
-        body = {'browseId': channelId}
-        endpoint = 'browse'
-        response = self._send_request(endpoint, body)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
-
+        response, results = _browsing_results(self, 'browse', {"browseId": channelId}, SINGLE_COLUMN_TAB + SECTION_LIST)
         artist = {'description': None, 'views': None}
         header = response['header']['musicImmersiveHeaderRenderer']
         artist['name'] = nav(header, TITLE_TEXT)
@@ -241,10 +229,7 @@ class BrowsingMixin:
           except artists key is missing.
 
         """
-        body = {"browseId": channelId, "params": params}
-        endpoint = 'browse'
-        response = self._send_request(endpoint, body)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + GRID_ITEMS)
+        response, results = _browsing_results(self, 'browse', {"browseId": channelId, "params": params}, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + GRID_ITEMS)
         albums = parse_albums(results)
 
         return albums
@@ -297,11 +282,8 @@ class BrowsingMixin:
               }
             }
         """
-        endpoint = 'browse'
-        body = {"browseId": channelId}
-        response = self._send_request(endpoint, body)
+        response, results = _browsing_results(self, 'browse', {"browseId": channelId}, SINGLE_COLUMN_TAB + SECTION_LIST)
         user = {'name': nav(response, ['header', 'musicVisualHeaderRenderer'] + TITLE_TEXT)}
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
         user.update(self.parser.parse_artist_contents(results))
         return user
 
@@ -315,10 +297,7 @@ class BrowsingMixin:
         :return: List of user playlists in the format of :py:func:`get_library_playlists`
 
         """
-        endpoint = 'browse'
-        body = {"browseId": channelId, 'params': params}
-        response = self._send_request(endpoint, body)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + GRID_ITEMS)
+        response, results = _browsing_results(self, 'browse', {"browseId": channelId, "params": params}, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + GRID_ITEMS)
         user_playlists = parse_content_list(results, parse_playlist)
 
         return user_playlists
@@ -398,11 +377,8 @@ class BrowsingMixin:
               "duration_seconds": 4657
             }
         """
-        body = {'browseId': browseId}
-        endpoint = 'browse'
-        response = self._send_request(endpoint, body)
+        response, results = _browsing_results(self, 'browse', {"browseId": browseId}, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF)
         album = parse_album_header(response)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF)
         album['tracks'] = parse_playlist_items(results['contents'])
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST + [1] + CAROUSEL, True)
         if results is not None:
