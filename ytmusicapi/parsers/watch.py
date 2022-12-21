@@ -11,12 +11,7 @@ def parse_watch_playlist(results):
         if PPVWR in result:
             counterpart = result[PPVWR]['counterpart'][0]['counterpartRenderer'][PPVR]
             result = result[PPVWR]['primaryRenderer']
-        if PPVR not in result:
-            continue
         data = result[PPVR]
-        if 'unplayableText' in data:
-            continue
-
         track = parse_watch_track(data)
         if counterpart:
             track['counterpart'] = parse_watch_track(counterpart)
@@ -28,12 +23,7 @@ def parse_watch_playlist(results):
 def parse_watch_track(data):
     feedback_tokens = like_status = None
     for item in nav(data, MENU_ITEMS):
-        if TOGGLE_MENU in item:
-            service = item[TOGGLE_MENU]['defaultServiceEndpoint']
-            if 'feedbackEndpoint' in service:
-                feedback_tokens = parse_song_menu_tokens(item)
-            if 'likeEndpoint' in service:
-                like_status = parse_like_status(service)
+        parse_watch_track_item(item)
 
     song_info = parse_song_runs(data['longBylineText']['runs'])
 
@@ -56,3 +46,11 @@ def get_tab_browse_id(watchNextRenderer, tab_id):
             'browseId']
     else:
         return None
+
+def parse_watch_track_item(item):
+    if TOGGLE_MENU in item:
+        service = item[TOGGLE_MENU]['defaultServiceEndpoint']
+        if 'feedbackEndpoint' in service:
+            feedback_tokens = parse_song_menu_tokens(item)
+        if 'likeEndpoint' in service:
+            like_status = parse_like_status(service)
