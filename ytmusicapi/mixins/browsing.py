@@ -1,5 +1,4 @@
 from ._utils import get_datestamp
-from ytmusicapi.continuations import get_continuations
 from ytmusicapi.helpers import YTM_DOMAIN, sum_total_duration
 from ytmusicapi.parsers.browsing import *
 from ytmusicapi.parsers.albums import parse_album_header
@@ -7,7 +6,7 @@ from ytmusicapi.parsers.playlists import parse_playlist_items
 from ytmusicapi.parsers.library import parse_albums
 from raise_utils import raise_get_song, raise_get_lyrics, raise_match, raise_match_signature
 from get_library_utils import if_continuation
-from browsing_utils import _browsing_results
+from browsing_utils import _browsing_results, _get_artist_info, api_return_none
 
 class BrowsingMixin:
     def get_home(self, limit=3) -> List[Dict]:
@@ -190,31 +189,9 @@ class BrowsingMixin:
             }
         """
         response, results = _browsing_results(self, 'browse', {"browseId": channelId}, SINGLE_COLUMN_TAB + SECTION_LIST)
-        artist = {'description': None, 'views': None}
         header = response['header']['musicImmersiveHeaderRenderer']
-        artist['name'] = nav(header, TITLE_TEXT)
-        descriptionShelf = find_object_by_key(results, DESCRIPTION_SHELF[0], is_key=True)
-        if descriptionShelf:
-            artist['description'] = nav(descriptionShelf, DESCRIPTION)
-            artist['views'] = None if 'subheader' not in descriptionShelf else descriptionShelf[
-                'subheader']['runs'][0]['text']
-        subscription_button = header['subscriptionButton']['subscribeButtonRenderer']
-        artist['channelId'] = subscription_button['channelId']
-        artist['shuffleId'] = nav(header,
-                                  ['playButton', 'buttonRenderer'] + NAVIGATION_WATCH_PLAYLIST_ID,
-                                  True)
-        artist['radioId'] = nav(header, ['startRadioButton', 'buttonRenderer']
-                                + NAVIGATION_WATCH_PLAYLIST_ID, True)
-        artist['subscribers'] = nav(subscription_button,
-                                    ['subscriberCountText', 'runs', 0, 'text'], True)
-        artist['subscribed'] = subscription_button['subscribed']
-        artist['thumbnails'] = nav(header, THUMBNAILS, True)
-        artist['songs'] = {'browseId': None}
-        if 'musicShelfRenderer' in results[0]:  # API sometimes does not return songs
-            musicShelf = nav(results[0], MUSIC_SHELF)
-            if 'navigationEndpoint' in nav(musicShelf, TITLE):
-                artist['songs']['browseId'] = nav(musicShelf, TITLE + NAVIGATION_BROWSE_ID)
-            artist['songs']['results'] = parse_playlist_items(musicShelf['contents'])
+        artist = _get_artist_info(header, DESCRIPTION_SHELF[0], results)
+        api_return_none(artist, results)
 
         artist.update(self.parser.parse_artist_contents(results))
         return artist
@@ -384,7 +361,7 @@ class BrowsingMixin:
         if results is not None:
             album['other_versions'] = parse_content_list(results['contents'], parse_album)
         album['duration_seconds'] = sum_total_duration(album)
-        for i, track in enumerate(album['tracks']):
+        for i, _ in enumerate(album['tracks']):
             album['tracks'][i]['album'] = album['title']
             album['tracks'][i]['artists'] = album['artists']
 
